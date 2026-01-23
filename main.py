@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 from pathlib import Path
@@ -61,12 +62,7 @@ def rename(
         with open(image_path, "rb") as f:
             image_bytes = f.read()
 
-        prompt = (
-            "Identify the company or brand in this logo image. "
-            "If there is no text, identify it based on visual features (like a reverse image search). "
-            "Return ONLY the company name formatted as a clean filename (lowercase, snake_case, no special characters, no file extension). "
-            "Example output: 'google' or 'coca_cola' or 'nike'."
-        )
+        prompt = "Identify the company or brand in this logo image."
 
         response = client.models.generate_content(
             model=model_name,
@@ -76,9 +72,44 @@ def rename(
                 ),
                 prompt,
             ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema={
+                    "type": "OBJECT",
+                    "properties": {
+                        "company_name": {
+                            "type": "STRING",
+                            "description": "The company name in lowercase snake_case.",
+                        }
+                    },
+                    "required": ["company_name"],
+                },
+            ),
         )
 
-        company_name = response.text.strip().lower()
+        company_name = ""
+        if response.parsed:
+            if isinstance(response.parsed, dict):
+                company_name = response.parsed.get("company_name", "")
+            else:
+                company_name = getattr(response.parsed, "company_name", "")
+        elif response.text:
+            try:
+                data = json.loads(response.text)
+                company_name = data.get("company_name", "")
+            except json.JSONDecodeError:
+                console.print(
+                    f"[bold red]Error:[/] Failed to parse JSON from response text: {response.text}"
+                )
+                return
+        else:
+            console.print("[bold red]Error:[/] Model returned no content.")
+            if response.candidates:
+                console.print(f"Finish reason: {response.candidates[0].finish_reason}")
+            # console.print(response) # Uncomment for deep debugging
+            return
+
+        company_name = company_name.strip().lower()
 
         # Basic sanitization just in case
         company_name = "".join(c if c.isalnum() or c == "_" else "_" for c in company_name)
