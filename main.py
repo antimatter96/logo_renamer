@@ -45,12 +45,16 @@ def rename(
         console.print(f"[bold red]Error:[/] File '{image_path}' does not exist.")
         raise typer.Exit(code=1)
 
-    client = get_client()
-
     try:
         # Load image to verify it's valid
         Image.open(image_path)
+    except Exception as e:
+        console.print(f"[bold red]Error:[/] Invalid image file '{image_path}': {e}")
+        raise typer.Exit(code=1)
 
+    client = get_client()
+
+    try:
         console.print(f"[bold blue]Processing:[/] {image_path.name}...")
 
         # Read image bytes
