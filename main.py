@@ -17,19 +17,27 @@ load_dotenv()
 app = typer.Typer(help="Rename company logos based on brand recognition.")
 console = Console()
 
+
 def get_client() -> genai.Client:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        console.print("[bold red]Error:[/] GEMINI_API_KEY not found in environment or .env file.")
-        console.print("Please set your API key in a .env file: [bold]GEMINI_API_KEY=your_key_here[/]")
+        console.print(
+            "[bold red]Error:[/] GEMINI_API_KEY not found in environment or .env file."
+        )
+        console.print(
+            "Please set your API key in a .env file: [bold]GEMINI_API_KEY=your_key_here[/]"
+        )
         raise typer.Exit(code=1)
     return genai.Client(api_key=api_key)
+
 
 @app.command()
 def rename(
     image_path: Path = typer.Argument(..., help="Path to the logo image file."),
     model_name: str = typer.Option("gemini-3-flash-preview", help="Gemini model to use."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen without renaming."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would happen without renaming."
+    ),
 ):
     """
     Identifies a company from its logo and renames the file to the company name.
@@ -43,7 +51,7 @@ def rename(
     try:
         # Load image to verify it's valid
         img = Image.open(image_path)
-        
+
         console.print(f"[bold blue]Processing:[/] {image_path.name}...")
 
         # Read image bytes
@@ -60,16 +68,18 @@ def rename(
         response = client.models.generate_content(
             model=model_name,
             contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type=f"image/{image_path.suffix[1:]}"),
+                types.Part.from_bytes(
+                    data=image_bytes, mime_type=f"image/{image_path.suffix[1:]}"
+                ),
                 prompt,
-            ]
+            ],
         )
 
         company_name = response.text.strip().lower()
-        
+
         # Basic sanitization just in case
         company_name = "".join(c if c.isalnum() or c == "_" else "_" for c in company_name)
-        
+
         if not company_name:
             console.print("[bold yellow]Warning:[/] Could not identify a company name.")
             return
@@ -83,19 +93,29 @@ def rename(
             return
 
         if dry_run:
-            console.print(Panel(f"Dry Run: [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]", title="Proposed Change"))
+            console.print(
+                Panel(
+                    f"Dry Run: [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]",
+                    title="Proposed Change",
+                )
+            )
         else:
             # Handle collision
             if new_path.exists():
-                console.print(f"[bold yellow]Collision:[/] {new_filename} already exists. Skipping.")
+                console.print(
+                    f"[bold yellow]Collision:[/] {new_filename} already exists. Skipping."
+                )
                 return
-                
+
             image_path.rename(new_path)
-            console.print(f"[bold green]Renamed:[/] [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]")
+            console.print(
+                f"[bold green]Renamed:[/] [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]"
+            )
 
     except Exception as e:
         console.print(f"[bold red]Error during processing:[/] {e}")
         raise typer.Exit(code=1)
+
 
 if __name__ == "__main__":
     app()
