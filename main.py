@@ -1,34 +1,18 @@
-import json
-import os
-from datetime import datetime
 from pathlib import Path
 
 import typer
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-from PIL import Image
 from rich.console import Console
 from rich.panel import Panel
+
+import genai_client
+import image_ops
 
 # Load environment variables
 load_dotenv()
 
 app = typer.Typer(help="Rename company logos based on brand recognition.")
 console = Console()
-
-
-def get_client() -> genai.Client:
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        console.print(
-            "[bold red]Error:[/] GEMINI_API_KEY not found in environment or .env file."
-        )
-        console.print(
-            "Please set your API key in a .env file: [bold]GEMINI_API_KEY=your_key_here[/]"
-        )
-        raise typer.Exit(code=1)
-    return genai.Client(api_key=api_key)
 
 
 @app.command()
@@ -42,122 +26,75 @@ def rename(
     """
     Identifies a company from its logo and renames the file to the company name.
     """
-    if not image_path.exists():
-        console.print(f"[bold red]Error:[/] File '{image_path}' does not exist.")
-        raise typer.Exit(code=1)
-
-    try:
-        # Load image to verify it's valid
-        Image.open(image_path)
-    except Exception as e:
-        console.print(f"[bold red]Error:[/] Invalid image file '{image_path}': {e}")
-        raise typer.Exit(code=1)
-
-    client = get_client()
-
-    try:
-        console.print(f"[bold blue]Processing:[/] {image_path.name}...")
-
-        # Read image bytes
-        with open(image_path, "rb") as f:
-            image_bytes = f.read()
-
-        prompt = "Identify the company or brand in this logo image."
-
-        response = client.models.generate_content(
-            model=model_name,
-            contents=[
-                types.Part.from_bytes(
-                    data=image_bytes, mime_type=f"image/{image_path.suffix[1:]}"
-                ),
-                prompt,
-            ],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema={
-                    "type": "OBJECT",
-                    "properties": {
-                        "company_name": {
-                            "type": "STRING",
-                            "description": "The company name in lowercase snake_case.",
-                        }
-                    },
-                    "required": ["company_name"],
-                },
-            ),
+    # 1. Initialize Client
+    client = genai_client.get_client()
+    if not client:
+        console.print(
+            "[bold red]Error:[/] GEMINI_API_KEY not found in environment or .env file."
         )
+        console.print(
+            "Please set your API key in a .env file: [bold]GEMINI_API_KEY=your_key_here[/]"
+        )
+        raise typer.Exit(code=1)
 
-        company_name = ""
-        if response.parsed:
-            if isinstance(response.parsed, dict):
-                company_name = response.parsed.get("company_name", "")
-            else:
-                company_name = getattr(response.parsed, "company_name", "")
-        elif response.text:
-            try:
-                data = json.loads(response.text)
-                company_name = data.get("company_name", "")
-            except json.JSONDecodeError:
-                console.print(
-                    f"[bold red]Error:[/] Failed to parse JSON from response text: {response.text}"
-                )
-                return
-        else:
-            console.print("[bold red]Error:[/] Model returned no content.")
-            if response.candidates:
-                console.print(f"Finish reason: {response.candidates[0].finish_reason}")
-            # console.print(response) # Uncomment for deep debugging
-            return
+    # 2. Validate and Load Image
+    try:
+        image_bytes = image_ops.load_and_validate_image(image_path)
+    except image_ops.ImageValidationError as e:
+        console.print(f"[bold red]Error:[/] {e}")
+        raise typer.Exit(code=1)
 
-        company_name = company_name.strip().lower()
+    mime_type = image_ops.get_mime_type(image_path)
 
-        # Basic sanitization just in case
-        company_name = "".join(c if c.isalnum() or c == "_" else "_" for c in company_name)
+    # 3. Identify Company
+    console.print(f"[bold blue]Processing:[/] {image_path.name}...")
+    try:
+        company_name = genai_client.identify_company(
+            client=client, image_bytes=image_bytes, mime_type=mime_type, model_name=model_name
+        )
+    except Exception as e:
+        console.print(f"[bold red]Error during API call:[/] {e}")
+        raise typer.Exit(code=1)
 
-        if not company_name:
-            console.print("[bold yellow]Warning:[/] Could not identify a company name.")
-            return
+    if not company_name:
+        console.print("[bold yellow]Warning:[/] Could not identify a company name.")
+        return
 
-        extension = image_path.suffix
-        new_filename = f"{company_name}{extension}"
-        new_path = image_path.parent / new_filename
+    # 4. Determine New Path
+    new_path = image_ops.determine_new_path(image_path, company_name)
+    new_filename = new_path.name
 
-        if image_path.name == new_filename:
-            console.print(f"[bold green]Already named correctly:[/] {image_path.name}")
-            return
+    if image_path.name == new_filename:
+        console.print(f"[bold green]Already named correctly:[/] {image_path.name}")
+        return
 
-        if dry_run:
-            console.print(
-                Panel(
-                    f"Dry Run: [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]",
-                    title="Proposed Change",
-                )
+    # 5. Execute or Dry Run
+    if dry_run:
+        console.print(
+            Panel(
+                f"Dry Run: [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]",
+                title="Proposed Change",
             )
-        else:
-            # Handle collision
-            if new_path.exists():
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                new_filename = f"{company_name}_{timestamp}{extension}"
-                new_path = image_path.parent / new_filename
+        )
+    else:
+        try:
+            final_path = image_ops.rename_image(image_path, new_path)
 
-                if new_path.exists():
-                    console.print(
-                        f"[bold red]Error:[/] Collision even with timestamp: {new_filename}. Skipping."
-                    )
-                    return
-
+            # Check if we had to handle a collision
+            if final_path.name != new_filename:
                 console.print(
                     "[bold yellow]Collision:[/] Name already exists. Appending timestamp."
                 )
 
-            image_path.rename(new_path)
             console.print(
-                f"[bold green]Renamed:[/] [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]"
+                f"[bold green]Renamed:[/] [bold cyan]{image_path.name}[/] -> [bold green]{final_path.name}[/]"
             )
 
-    except Exception as e:
-        console.print(f"[bold red]Error during processing:[/] {e}")
-        raise typer.Exit(code=1)
+        except FileExistsError as e:
+            console.print(f"[bold red]Error:[/] {e}. Skipping.")
+        except Exception as e:
+            console.print(f"[bold red]Error during rename:[/] {e}")
+            raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

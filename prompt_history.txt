@@ -317,3 +317,51 @@
   safely extracts the company_name in both scenarios. I am keeping the current solution as it addresses the issue effectively.
 
 > /quit
+
+---
+
+> Modularize the code
+  One file for genai stuff
+  One file for main cli program
+  One file for image load and final rename
+
+✦ I will read main.py to understand the current code structure and identify how to split it.
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  ReadFile main.py                                                                                                                               │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ I will create genai_client.py to handle the Google GenAI client initialization and the logic for identifying the company from the logo image.
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  WriteFile Writing to genai_client.py                                                                                                           │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ I will create image_ops.py to handle image validation, reading the file content, generating the new file path, and safely renaming the file with
+  collision handling.
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  WriteFile Writing to image_ops.py                                                                                                              │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ I will rewrite main.py to utilize the newly created genai_client and image_ops modules, maintaining the original CLI functionality with typer and
+  rich for interaction.
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  WriteFile Writing to main.py                                                                                                                   │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ I will revert the default model name in main.py to gemini-3-flash-preview to match the original configuration and ensure the modularization doesn't
+  introduce unintended configuration changes.
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Edit main.py:     model_name: str = typer.Op... =>     model_name: str = typer.Op...                                                           │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ I'll list the files in the directory to verify the new structure and ensure genai_client.py and image_ops.py are present alongside main.py.
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  ReadFolder .                                                                                                                                   │
+│ Listed 13 item(s). (3 ignored)                                                                                                                    │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ The code has been modularized into three files:
+
+   1. `genai_client.py`: Handles all Google GenAI API interactions, including client initialization and the prompt logic for identifying companies.
+   2. `image_ops.py`: Handles image file operations, including validation, loading bytes, generating new paths, and performing the safe rename with
+      collision handling.
+   3. `main.py`: The main CLI entry point that uses typer and rich to orchestrate the process, calling functions from the other two modules.
+
+  No functionality or logic was changed, only the structure.
+
+> /quit
+
+---
