@@ -1,7 +1,6 @@
 import os
-import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import typer
 from dotenv import load_dotenv
@@ -50,7 +49,7 @@ def rename(
 
     try:
         # Load image to verify it's valid
-        img = Image.open(image_path)
+        Image.open(image_path)
 
         console.print(f"[bold blue]Processing:[/] {image_path.name}...")
 
@@ -102,10 +101,19 @@ def rename(
         else:
             # Handle collision
             if new_path.exists():
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                new_filename = f"{company_name}_{timestamp}{extension}"
+                new_path = image_path.parent / new_filename
+
+                if new_path.exists():
+                    console.print(
+                        f"[bold red]Error:[/] Collision even with timestamp: {new_filename}. Skipping."
+                    )
+                    return
+
                 console.print(
-                    f"[bold yellow]Collision:[/] {new_filename} already exists. Skipping."
+                    "[bold yellow]Collision:[/] Name already exists. Appending timestamp."
                 )
-                return
 
             image_path.rename(new_path)
             console.print(
