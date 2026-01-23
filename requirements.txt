@@ -1,5 +1,5 @@
-google-genai
-typer
-rich
-python-dotenv
-pillow
+google-genai==1.60.0
+typer==0.21.1
+rich==14.2.0
+python-dotenv==1.2.1
+pillow==12.1.0

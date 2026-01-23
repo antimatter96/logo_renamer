@@ -1,0 +1,12 @@
+{
+  "experimental": {
+    "skills": true
+  },
+  "context": {
+    "fileName": [
+      "AGENTS.md",
+      "CONTEXT.md",
+      "GEMINI.md"
+    ]
+  }
+}
