@@ -3,6 +3,11 @@ import os
 
 from google import genai
 from google.genai import types
+from pydantic import BaseModel, Field
+
+
+class CompanyResponse(BaseModel):
+    company_name: str = Field(description="The company name in lowercase snake_case.")
 
 
 def get_client() -> genai.Client | None:
@@ -33,16 +38,7 @@ def identify_company(
             ],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema={
-                    "type": "OBJECT",
-                    "properties": {
-                        "company_name": {
-                            "type": "STRING",
-                            "description": "The company name in lowercase snake_case.",
-                        }
-                    },
-                    "required": ["company_name"],
-                },
+                response_schema=CompanyResponse,
             ),
         )
 
