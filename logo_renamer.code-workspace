@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"[python]": {
+			"editor.defaultFormatter": "charliermarsh.ruff",
+			"editor.formatOnSave": true,
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": "explicit"
+			},
+		},
+		"isort.args": [
+			"--profile",
+			"ruff"
+		],
+		"python.REPL.enableREPLSmartSend": false,
+		"python.analysis.typeCheckingMode": "off",
+		"python.analysis.exclude": [
+			"**/node_modules",
+			"**/__pycache__",
+			"**/build",
+			".git",
+		],
+		"terminal.integrated.fontFamily": "FiraCode NF",
+		"terminal.integrated.fontWeight": "500",
+		"window.zoomPerWindow": true,
+	},
+}
