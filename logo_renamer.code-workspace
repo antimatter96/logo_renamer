@@ -13,6 +13,8 @@
 			"**/Thumbs.db": true,
 
 			".ruff_cache/": true,
+			"__pycache__": true,
+			"**/__pycache__": true,
 		},
 		"[python]": {
 			"editor.defaultFormatter": "charliermarsh.ruff",
