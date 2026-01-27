@@ -6,54 +6,12 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
-from src.shared import image_ops
+from src.shared.image_ops import ImageValidationError, load_and_validate_image
 
 from . import genai_client, openai_client
+from .image_ops import determine_new_path, get_mime_type, rename_image
 
 console = Console()
-
-
-def get_mime_type(image_path: Path) -> str:
-    """
-    Returns a simple mime type based on extension.
-    """
-    # Simple inference, sufficient for the GenAI API usage here
-    # Remove the dot
-    suffix = image_path.suffix.lstrip(".").lower()
-    if suffix == "jpg":
-        suffix = "jpeg"
-    return f"image/{suffix}"
-
-
-def determine_new_path(image_path: Path, company_name: str) -> Path:
-    """
-    Constructs the desired new path based on company name.
-    """
-    extension = image_path.suffix
-    new_filename = f"{company_name}{extension}"
-    return image_path.parent / new_filename
-
-
-def rename_image(image_path: Path, target_path: Path) -> Path:
-    """
-    Renames the image to target_path.
-    If target_path exists, appends a timestamp to avoid collision.
-    Returns the actual path the file was renamed to.
-    Raises FileExistsError if it still collides (unlikely but possible).
-    """
-    final_path = target_path
-
-    if final_path.exists():
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # target_path.stem is the company name
-        new_filename = f"{target_path.stem}_{timestamp}{target_path.suffix}"
-        final_path = target_path.parent / new_filename
-
-        if final_path.exists():
-            raise FileExistsError(f"Collision even with timestamp: {final_path.name}")
-
-    image_path.rename(final_path)
-    return final_path
 
 
 def rename(
@@ -159,8 +117,8 @@ def _process_single_file(
     """
     # 2. Validate and Load Image
     try:
-        image_bytes = image_ops.load_and_validate_image(image_path)
-    except image_ops.ImageValidationError as e:
+        image_bytes = load_and_validate_image(image_path)
+    except ImageValidationError as e:
         console.print(f"[bold red]Skip {image_path.name}:[/ ] {e}")
         return False
 
