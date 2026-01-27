@@ -4,7 +4,7 @@ import os
 
 from openai import OpenAI
 
-from src.common import CompanyResponse
+from .models import CompanyResponse
 
 
 def get_client() -> OpenAI | None:

@@ -4,7 +4,7 @@ import os
 from google import genai
 from google.genai import types
 
-from src.common import CompanyResponse
+from .models import CompanyResponse
 
 
 def get_client() -> genai.Client | None:
