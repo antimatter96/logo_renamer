@@ -3,6 +3,8 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from .image_ops import trim_image
+
 console = Console()
 
 
