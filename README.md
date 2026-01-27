@@ -28,6 +28,11 @@ Rename a single logo using Gemini (default):
 python main.py rename path/to/logo.png
 ```
 
+Rename all logos in a directory:
+```bash
+python main.py rename path/to/logos_dir/
+```
+
 Rename using a local model:
 ```bash
 python main.py rename path/to/logo.png --provider local
