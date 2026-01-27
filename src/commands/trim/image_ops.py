@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageChops
 
 
-def trim_image(image_path: Path, margin: int = 10, replace: bool = False) -> Path:
+def trim_image(image_path: Path, margin: int, replace: bool = False) -> Path:
     """
     Trims the image by removing the border of the background color.
     The background color is determined from the top-left pixel.

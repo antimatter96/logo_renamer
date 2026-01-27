@@ -12,7 +12,7 @@ console = Console()
 
 def trim(
     image_path: Path = typer.Argument(..., help="Path to the image file or directory."),
-    margin: int = typer.Option(10, help="Margin in pixels to leave around the content."),
+    margin: int = typer.Option(20, help="Margin in pixels to leave around the content."),
     replace: bool = typer.Option(
         False,
         "--replace",
