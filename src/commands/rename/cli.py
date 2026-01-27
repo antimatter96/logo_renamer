@@ -1,13 +1,16 @@
 import os
 from pathlib import Path
+
 import typer
 from rich.console import Console
 from rich.panel import Panel
 
 from src.shared import image_ops
+
 from . import genai_client, openai_client
 
 console = Console()
+
 
 def rename(
     image_path: Path = typer.Argument(..., help="Path to the logo image file."),
@@ -59,7 +62,7 @@ def rename(
     if image_path.is_dir():
         # Bulk processing
         # Filter for common image extensions to avoid trying to read everything
-        valid_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif'}
+        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
         files_to_process = [
             p
             for p in image_path.iterdir()

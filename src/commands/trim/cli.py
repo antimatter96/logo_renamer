@@ -1,10 +1,12 @@
 from pathlib import Path
+
 import typer
 from rich.console import Console
 
 from src.shared import image_ops
 
 console = Console()
+
 
 def trim(
     image_path: Path = typer.Argument(..., help="Path to the image file or directory."),
