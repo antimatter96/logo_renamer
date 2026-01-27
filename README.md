@@ -43,5 +43,27 @@ See what would happen without actually renaming:
 python main.py rename path/to/logo.png --dry-run
 ```
 
+### Trim Background
+
+Trim the background from a single logo (identifies background from top-left pixel):
+```bash
+python main.py trim path/to/logo.png
+```
+
+Trim all logos in a directory:
+```bash
+python main.py trim path/to/logos_dir/
+```
+
+Customize the margin (default is 10 pixels):
+```bash
+python main.py trim path/to/logo.png --margin 20
+```
+
+Replace the original file instead of creating a `_trimmed` version:
+```bash
+python main.py trim path/to/logo.png --replace
+```
+
 ## How it works
 It uses either the `google-genai` SDK or `openai` SDK to send the image to a vision-capable model. The model identifies the brand (even if no text is present) and returns a sanitized `snake_case` name, which is then used to rename the file. It leverages structured outputs (Pydantic models) for reliable parsing.
