@@ -6,6 +6,7 @@ from rich.panel import Panel
 
 import src.genai_client as genai_client
 import src.image_ops as image_ops
+import src.openai_client as openai_client
 
 app = typer.Typer(help="Rename company logos based on brand recognition.")
 console = Console()
@@ -14,7 +15,10 @@ console = Console()
 @app.command()
 def rename(
     image_path: Path = typer.Argument(..., help="Path to the logo image file."),
-    model_name: str = typer.Option("gemini-3-flash-preview", help="Gemini model to use."),
+    model_name: str = typer.Option(None, help="Model to use. Defaults based on provider."),
+    provider: str = typer.Option(
+        "gemini", "--provider", "-p", help="AI provider: 'gemini' or 'local'."
+    ),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would happen without renaming."
     ),
@@ -22,14 +26,31 @@ def rename(
     """
     Identifies a company from its logo and renames the file to the company name.
     """
+    # 0. Set Defaults
+    if model_name is None:
+        if provider == "gemini":
+            model_name = "gemini-2.0-flash-exp"
+        else:
+            model_name = "local-model"  # Default for local if not specified
+
     # 1. Initialize Client
-    client = genai_client.get_client()
-    if not client:
+    client = None
+    if provider == "gemini":
+        client = genai_client.get_client()
+        if not client:
+            console.print(
+                "[bold red]Error:[/] GEMINI_API_KEY not found in environment or .env file."
+            )
+            console.print(
+                "Please set your API key in a .env file: [bold]GEMINI_API_KEY=your_key_here[/]"
+            )
+            raise typer.Exit(code=1)
+    elif provider == "local":
+        client = openai_client.get_client()
+        # Local client usually doesn't fail on init, but we check anyway if needed
+    else:
         console.print(
-            "[bold red]Error:[/] GEMINI_API_KEY not found in environment or .env file."
-        )
-        console.print(
-            "Please set your API key in a .env file: [bold]GEMINI_API_KEY=your_key_here[/]"
+            f"[bold red]Error:[/] Unknown provider '{provider}'. Use 'gemini' or 'local'."
         )
         raise typer.Exit(code=1)
 
@@ -43,11 +64,24 @@ def rename(
     mime_type = image_ops.get_mime_type(image_path)
 
     # 3. Identify Company
-    console.print(f"[bold blue]Processing:[/] {image_path.name}...")
+    console.print(
+        f"[bold blue]Processing:[/] {image_path.name} using [magenta]{provider}[/]..."
+    )
     try:
-        company_name = genai_client.identify_company(
-            client=client, image_bytes=image_bytes, mime_type=mime_type, model_name=model_name
-        )
+        if provider == "gemini":
+            company_name = genai_client.identify_company(
+                client=client,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+                model_name=model_name,
+            )
+        else:
+            company_name = openai_client.identify_company(
+                client=client,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+                model_name=model_name,
+            )
     except Exception as e:
         console.print(f"[bold red]Error during API call:[/] {e}")
         raise typer.Exit(code=1)
