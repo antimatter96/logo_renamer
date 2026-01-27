@@ -66,7 +66,8 @@ def rename(
         # Filter for common image extensions to avoid trying to read everything
         valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
         files_to_process = [
-            p for p in image_path.iterdir()
+            p
+            for p in image_path.iterdir()
             if p.is_file() and p.suffix.lower() in valid_extensions
         ]
 
@@ -103,7 +104,9 @@ def rename(
             raise typer.Exit(code=1)
 
 
-def _process_single_file(client, image_path: Path, model_name: str, provider: str, dry_run: bool) -> bool:
+def _process_single_file(
+    client, image_path: Path, model_name: str, provider: str, dry_run: bool
+) -> bool:
     """
     Processes a single image file: validation, identification, and renaming.
     Returns True if successful (renamed or correctly named), False otherwise.
@@ -141,7 +144,9 @@ def _process_single_file(client, image_path: Path, model_name: str, provider: st
         return False
 
     if not company_name:
-        console.print(f"[bold yellow]Warning:[/] Could not identify a company name for {image_path.name}.")
+        console.print(
+            f"[bold yellow]Warning:[/] Could not identify a company name for {image_path.name}."
+        )
         return False
 
     # 4. Determine New Path
