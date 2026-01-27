@@ -30,7 +30,7 @@ def rename(
     # 0. Set Defaults
     if model_name is None:
         if provider == "gemini":
-            model_name = os.getenv("GEMINI_MODAL_NAME", "gemini-3-flash-preview")
+            model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-flash-preview")
         else:
             model_name = os.getenv("LOCAL_OPENAI_MODEL_NAME", None)
             if not model_name:
