@@ -3,6 +3,8 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from src.shared.image_ops import ImageValidationError, load_and_validate_image
+
 from .image_ops import trim_image
 
 console = Console()
@@ -32,25 +34,51 @@ def trim(
         ]
 
         if not files_to_process:
-            console.print(f"[bold yellow]Warning:[/] No image files found in {image_path}")
+            console.print(f"[bold yellow]Warning:[/ ] No image files found in {image_path}")
             return
 
         console.print(
-            f"[bold blue]Bulk Trimming:[/] Found {len(files_to_process)} images in {image_path}"
+            f"[bold blue]Bulk Trimming:[/ ] Found {len(files_to_process)} images in {image_path}"
         )
 
+        success_count = 0
         for file_path in files_to_process:
             try:
-                output_path = trim_image(file_path, margin, replace)
-                console.print(f"[bold green]Trimmed:[/] {file_path.name} -> {output_path.name}")
+                if _process_single_file(file_path, margin, replace):
+                    success_count += 1
             except Exception as e:
-                console.print(f"[bold red]Error trimming {file_path.name}:[/] {e}")
+                console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
+
+        console.print(
+            f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files. {success_count} trimmed successfully."
+        )
 
     else:
         # Single file processing
         try:
-            output_path = trim_image(image_path, margin, replace)
-            console.print(f"[bold green]Trimmed:[/] {image_path.name} -> {output_path.name}")
+            _process_single_file(image_path, margin, replace)
         except Exception as e:
-            console.print(f"[bold red]Error trimming {image_path.name}:[/] {e}")
+            console.print(f"[bold red]Failed:[/ ] {e}")
             raise typer.Exit(code=1)
+
+
+def _process_single_file(image_path: Path, margin: int, replace: bool) -> bool:
+    """
+    Processes a single image file: validation and trimming.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        # 1. Validate image
+        load_and_validate_image(image_path)
+    except ImageValidationError as e:
+        console.print(f"[bold red]Skip {image_path.name}:[/ ] {e}")
+        return False
+
+    # 2. Trim image
+    try:
+        output_path = trim_image(image_path, margin, replace)
+        console.print(f"[bold green]Trimmed:[/ ] {image_path.name} -> {output_path.name}")
+        return True
+    except Exception as e:
+        console.print(f"[bold red]Error trimming {image_path.name}:[/ ] {e}")
+        return False
