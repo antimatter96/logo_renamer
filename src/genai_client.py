@@ -3,11 +3,8 @@ import os
 
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, Field
 
-
-class CompanyResponse(BaseModel):
-    company_name: str = Field(description="The company name in lowercase snake_case.")
+from src.common import CompanyResponse
 
 
 def get_client() -> genai.Client | None:
@@ -27,7 +24,7 @@ def identify_company(
     """
     Identifies a company or brand from a logo image using the GenAI model.
     """
-    prompt = "Identify the company or brand in this logo image."
+    prompt = "Identify the company or brand in this logo image"
 
     try:
         response = client.models.generate_content(
@@ -43,6 +40,7 @@ def identify_company(
         )
 
         company_name = ""
+
         if response.parsed:
             if isinstance(response.parsed, dict):
                 company_name = response.parsed.get("company_name", "")

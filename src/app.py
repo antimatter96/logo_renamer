@@ -71,7 +71,7 @@ def rename(
 
     # 3. Identify Company
     console.print(
-        f"[bold blue]Processing:[/] {image_path.name} using [magenta]{provider}[/]..."
+        f"[bold blue]Processing:[/] {image_path.name} using [red]{provider}[/]/[magenta]{model_name}[/]"
     )
     try:
         if provider == "gemini":

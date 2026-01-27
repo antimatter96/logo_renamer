@@ -3,11 +3,8 @@ import json
 import os
 
 from openai import OpenAI
-from pydantic import BaseModel, Field
 
-
-class CompanyResponse(BaseModel):
-    company_name: str = Field(description="The company name in lowercase snake_case.")
+from src.common import CompanyResponse
 
 
 def get_client() -> OpenAI | None:
@@ -30,7 +27,7 @@ def identify_company(
     """
     Identifies a company or brand from a logo image using a local OpenAI-compatible model.
     """
-    prompt = "Identify the company or brand in this logo image. Return the result as JSON."
+    prompt = "Identify the company or brand in this logo image"
 
     # Encode image
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
