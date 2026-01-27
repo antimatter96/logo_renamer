@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import typer
@@ -29,9 +30,14 @@ def rename(
     # 0. Set Defaults
     if model_name is None:
         if provider == "gemini":
-            model_name = "gemini-2.0-flash-exp"
+            model_name = os.getenv("GEMINI_MODAL_NAME", "gemini-3-flash-preview")
         else:
-            model_name = "local-model"  # Default for local if not specified
+            model_name = os.getenv("LOCAL_OPENAI_MODEL_NAME", None)
+            if not model_name:
+                console.print(
+                    "[bold red]Error:[/] LOCAL_OPENAI_MODEL_NAME not found in environment or .env file."
+                )
+                raise typer.Exit(code=1)
 
     # 1. Initialize Client
     client = None
