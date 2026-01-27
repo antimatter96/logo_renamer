@@ -1,7 +1,8 @@
 from pathlib import Path
+
 import typer
-from rich.console import Console
 from PIL import Image, ImageChops
+from rich.console import Console
 
 from src.shared import image_ops
 
@@ -68,7 +69,6 @@ def trim_image(image_path: Path, margin: int = 10, replace: bool = False) -> Pat
 
 
 def trim(
-
     image_path: Path = typer.Argument(..., help="Path to the image file or directory."),
     margin: int = typer.Option(10, help="Margin in pixels to leave around the content."),
     replace: bool = typer.Option(
