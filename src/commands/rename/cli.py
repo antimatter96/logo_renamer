@@ -78,10 +78,14 @@ def rename(
             f"[bold blue]Bulk Processing:[/ ] Found {len(files_to_process)} images in {image_path}"
         )
 
+        target_dir = image_path / "renamed"
+
         success_count = 0
         for file_path in files_to_process:
             try:
-                if _process_single_file(client, file_path, model_name, provider, dry_run):
+                if _process_single_file(
+                    client, file_path, model_name, provider, dry_run, target_dir=target_dir
+                ):
                     success_count += 1
             except Exception as e:
                 console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
@@ -109,6 +113,7 @@ def _process_single_file(
     model_name: str,
     provider: str,
     dry_run: bool,
+    target_dir: Path = None,
 ) -> bool:
     """
     Processes a single image file: validation, identification, and renaming.
@@ -153,18 +158,19 @@ def _process_single_file(
         return False
 
     # 4. Determine New Path
-    new_path = determine_new_path(image_path, company_name)
+    new_path = determine_new_path(image_path, company_name, target_dir=target_dir)
     new_filename = new_path.name
 
-    if image_path.name == new_filename:
+    if image_path.absolute() == new_path.absolute():
         console.print(f"[bold green]Already named correctly:[/ ] {image_path.name}")
         return True
 
     # 5. Execute or Dry Run
     if dry_run:
+        dest_desc = f"{new_path.parent.name}/{new_filename}" if target_dir else new_filename
         console.print(
             Panel(
-                f"Dry Run: [bold cyan]{image_path.name}[/] -> [bold green]{new_filename}[/]",
+                f"Dry Run: [bold cyan]{image_path.name}[/] -> [bold green]{dest_desc}[/]",
                 title="Proposed Change",
             )
         )
@@ -179,8 +185,11 @@ def _process_single_file(
                     "[bold yellow]Collision:[/ ] Name already exists. Appending timestamp."
                 )
 
+            dest_display = (
+                f"{final_path.parent.name}/{final_path.name}" if target_dir else final_path.name
+            )
             console.print(
-                f"[bold green]Renamed:[/ ] [bold cyan]{image_path.name}[/] -> [bold green]{final_path.name}[/]"
+                f"[bold green]Renamed:[/ ] [bold cyan]{image_path.name}[/] -> [bold green]{dest_display}[/]"
             )
             return True
 

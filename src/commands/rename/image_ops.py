@@ -14,13 +14,14 @@ def get_mime_type(image_path: Path) -> str:
     return f"image/{suffix}"
 
 
-def determine_new_path(image_path: Path, company_name: str) -> Path:
+def determine_new_path(image_path: Path, company_name: str, target_dir: Path = None) -> Path:
     """
     Constructs the desired new path based on company name.
     """
     extension = image_path.suffix
     new_filename = f"{company_name}{extension}"
-    return image_path.parent / new_filename
+    parent = target_dir if target_dir else image_path.parent
+    return parent / new_filename
 
 
 def rename_image(image_path: Path, target_path: Path) -> Path:
@@ -30,6 +31,9 @@ def rename_image(image_path: Path, target_path: Path) -> Path:
     Returns the actual path the file was renamed to.
     Raises FileExistsError if it still collides (unlikely but possible).
     """
+    # Ensure target directory exists
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
     final_path = target_path
 
     if final_path.exists():
