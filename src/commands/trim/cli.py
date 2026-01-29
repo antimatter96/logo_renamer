@@ -11,7 +11,9 @@ console = Console()
 
 
 def trim(
-    image_path: Path = typer.Argument(..., help="Path to the image file or directory."),
+    image_paths: list[Path] = typer.Argument(
+        ..., help="Path to the image file(s) or directories."
+    ),
     margin: int = typer.Option(20, help="Margin in pixels to leave around the content."),
     replace: bool = typer.Option(
         False,
@@ -24,42 +26,50 @@ def trim(
     Trims the background from an image or a directory of images.
     Identifies the background color from the top-left pixel.
     """
-    if image_path.is_dir():
-        # Bulk processing
-        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
-        files_to_process = [
-            p
-            for p in image_path.iterdir()
-            if p.is_file() and p.suffix.lower() in valid_extensions
-        ]
+    # 1. Collect Files
+    files_to_process = []
+    valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
 
-        if not files_to_process:
-            console.print(f"[bold yellow]Warning:[/ ] No image files found in {image_path}")
-            return
+    for path in image_paths:
+        if path.is_dir():
+            dir_files = [
+                p
+                for p in path.iterdir()
+                if p.is_file() and p.suffix.lower() in valid_extensions
+            ]
+            if not dir_files:
+                console.print(f"[bold yellow]Warning:[/ ] No image files found in {path}")
+                continue
+            files_to_process.extend(dir_files)
+        else:
+            if not path.exists():
+                console.print(f"[bold red]Error:[/ ] File not found: {path}")
+                continue
+            files_to_process.append(path)
 
+    if not files_to_process:
+        console.print("[bold yellow]Warning:[/ ] No image files found to process.")
+        return
+
+    if len(image_paths) == 1 and image_paths[0].is_dir():
         console.print(
-            f"[bold blue]Bulk Trimming:[/ ] Found {len(files_to_process)} images in {image_path}"
+            f"[bold blue]Bulk Trimming:[/ ] Found {len(files_to_process)} images in {image_paths[0]}"
         )
+    elif len(files_to_process) > 1:
+        console.print(f"[bold blue]Trimming {len(files_to_process)} image(s)...[/ ]")
 
-        success_count = 0
-        for file_path in files_to_process:
-            try:
-                if _process_single_file(file_path, margin, replace):
-                    success_count += 1
-            except Exception as e:
-                console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
-
-        console.print(
-            f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files. {success_count} trimmed successfully."
-        )
-
-    else:
-        # Single file processing
+    # 2. Process Files
+    success_count = 0
+    for file_path in files_to_process:
         try:
-            _process_single_file(image_path, margin, replace)
+            if _process_single_file(file_path, margin, replace):
+                success_count += 1
         except Exception as e:
-            console.print(f"[bold red]Failed:[/ ] {e}")
-            raise typer.Exit(code=1)
+            console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
+
+    console.print(
+        f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files. {success_count} trimmed successfully."
+    )
 
 
 def _process_single_file(image_path: Path, margin: int, replace: bool) -> bool:

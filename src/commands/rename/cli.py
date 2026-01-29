@@ -15,7 +15,9 @@ console = Console()
 
 
 def rename(
-    image_path: Path = typer.Argument(..., help="Path to the logo image file."),
+    image_paths: list[Path] = typer.Argument(
+        ..., help="Path to the logo image file(s) or directories."
+    ),
     model_name: str = typer.Option(None, help="Model to use. Defaults based on provider."),
     provider: str = typer.Option(
         "gemini", "--provider", "-p", help="AI provider: 'gemini' or 'local'."
@@ -60,57 +62,56 @@ def rename(
         )
         raise typer.Exit(code=1)
 
-    # 2. Process Input
-    if image_path.is_dir():
-        # Bulk processing
-        # Filter for common image extensions to avoid trying to read everything
-        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
-        files_to_process = [
-            p
-            for p in image_path.iterdir()
-            if p.is_file() and p.suffix.lower() in valid_extensions
-        ]
+    # 2. Collect Files
+    files_to_process = []
+    valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
 
-        if not files_to_process:
-            console.print(f"[bold yellow]Warning:[/ ] No image files found in {image_path}")
-            return
+    for path in image_paths:
+        if path.is_dir():
+            dir_files = [
+                (p, path / "renamed")
+                for p in path.iterdir()
+                if p.is_file() and p.suffix.lower() in valid_extensions
+            ]
+            if not dir_files:
+                console.print(f"[bold yellow]Warning:[/ ] No image files found in {path}")
+                continue
+            files_to_process.extend(dir_files)
+        else:
+            if not path.exists():
+                console.print(f"[bold red]Error:[/ ] File not found: {path}")
+                continue
+            files_to_process.append((path, None))
 
+    if not files_to_process:
+        console.print("[bold yellow]Warning:[/ ] No image files found to process.")
+        return
+
+    if len(image_paths) == 1 and image_paths[0].is_dir():
         console.print(
-            f"[bold blue]Bulk Processing:[/ ] Found {len(files_to_process)} images in {image_path}"
+            f"[bold blue]Bulk Processing:[/ ] Found {len(files_to_process)} images in {image_paths[0]}"
         )
+    elif len(files_to_process) > 1:
+        console.print(f"[bold blue]Processing {len(files_to_process)} image(s)...[/ ]")
 
-        target_dir = image_path / "renamed"
+    # 3. Process Files
+    success_count = 0
+    for i, (file_path, target_dir) in enumerate(files_to_process):
+        # Rate limit for Gemini to avoid hitting API limits
+        if provider == "gemini" and i > 0:
+            time.sleep(11)
 
-        success_count = 0
-        for i, file_path in enumerate(files_to_process):
-            # Rate limit for Gemini to avoid hitting API limits
-            # Skip for the first file to avoid unnecessary wait
-            if provider == "gemini" and i > 0:
-                time.sleep(11)
-
-            try:
-                if _process_single_file(
-                    client, file_path, model_name, provider, dry_run, target_dir=target_dir
-                ):
-                    success_count += 1
-            except Exception as e:
-                console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
-
-        console.print(
-            f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files. {success_count} renamed successfully."
-        )
-
-    else:
-        # Single file processing
         try:
-            _process_single_file(client, image_path, model_name, provider, dry_run)
+            if _process_single_file(
+                client, file_path, model_name, provider, dry_run, target_dir=target_dir
+            ):
+                success_count += 1
         except Exception as e:
-            # For single file, we might want to re-raise to exit with error code,
-            # but the helper handles printing errors.
-            # If it was a critical error, the helper might have raised.
-            # Let's ensure we exit with 1 if it failed.
-            console.print(f"[bold red]Failed:[/ ] {e}")
-            raise typer.Exit(code=1)
+            console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
+
+    console.print(
+        f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files. {success_count} renamed successfully."
+    )
 
 
 def _process_single_file(
