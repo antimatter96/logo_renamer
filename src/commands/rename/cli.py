@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 import typer
@@ -81,7 +82,12 @@ def rename(
         target_dir = image_path / "renamed"
 
         success_count = 0
-        for file_path in files_to_process:
+        for i, file_path in enumerate(files_to_process):
+            # Rate limit for Gemini to avoid hitting API limits
+            # Skip for the first file to avoid unnecessary wait
+            if provider == "gemini" and i > 0:
+                time.sleep(11)
+
             try:
                 if _process_single_file(
                     client, file_path, model_name, provider, dry_run, target_dir=target_dir

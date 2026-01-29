@@ -24,7 +24,7 @@ def identify_company(
     """
     Identifies a company or brand from a logo image using the GenAI model.
     """
-    prompt = "Identify the company or brand in this logo image"
+    prompt = "Identify the company or brand in this logo image, Give your reasoning"
 
     try:
         response = client.models.generate_content(
