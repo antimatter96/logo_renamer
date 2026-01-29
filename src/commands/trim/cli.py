@@ -89,6 +89,9 @@ def _process_single_file(image_path: Path, margin: int, replace: bool) -> bool:
         output_path = trim_image(image_path, margin, replace)
         console.print(f"[bold green]Trimmed:[/ ] {image_path.name} -> {output_path.name}")
         return True
+    except ImageValidationError as e:
+        console.print(f"[bold red]Skip {image_path.name}:[/ ] {e}")
+        return False
     except Exception as e:
         console.print(f"[bold red]Error trimming {image_path.name}:[/ ] {e}")
         return False

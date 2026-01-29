@@ -1,12 +1,16 @@
+from collections import Counter
 from pathlib import Path
 
 from PIL import Image, ImageChops
+
+from src.shared.image_ops import ImageValidationError
 
 
 def trim_image(image_path: Path, margin: int, replace: bool = False) -> Path:
     """
     Trims the image by removing the border of the background color.
-    The background color is determined from the top-left pixel.
+    The background color is determined by checking all 4 corners;
+    at least 3 must match to proceed.
     Adds a specified margin around the cropped content.
     Returns the path to the saved image.
     """
@@ -18,7 +22,26 @@ def trim_image(image_path: Path, margin: int, replace: bool = False) -> Path:
 
         # We use a copy for calculation to not mess up the original if we needed to convert
         calc_img = img.convert("RGBA")
-        bg_color = calc_img.getpixel((0, 0))
+        width, height = calc_img.size
+
+        # Check all 4 corners to determine background color
+        corners = [
+            calc_img.getpixel((0, 0)),
+            calc_img.getpixel((width - 1, 0)),
+            calc_img.getpixel((0, height - 1)),
+            calc_img.getpixel((width - 1, height - 1)),
+        ]
+
+        # Determine if we have a consistent background (>= 3 corners match)
+        corner_counts = Counter(corners)
+        most_common_bg, count = corner_counts.most_common(1)[0]
+
+        if count < 3:
+            raise ImageValidationError(
+                "Inconsistent background color: fewer than 3 corners match."
+            )
+
+        bg_color = most_common_bg
 
         # Create a background image with the same color
         bg = Image.new("RGBA", calc_img.size, bg_color)
