@@ -86,7 +86,12 @@ def _process_single_file(image_path: Path, margin: int, replace: bool) -> bool:
 
     # 2. Trim image
     try:
-        output_path = trim_image(image_path, margin, replace)
+        output_path, was_modified = trim_image(image_path, margin, replace)
+        if not was_modified:
+            console.print(
+                f"[bold yellow]Warning:[/ ] No changes for {image_path.name} (already optimal size)"
+            )
+            return True  # Consider it successful even if no trim was needed
         console.print(f"[bold green]Trimmed:[/ ] {image_path.name} -> {output_path.name}")
         return True
     except ImageValidationError as e:

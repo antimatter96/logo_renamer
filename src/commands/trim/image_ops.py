@@ -6,13 +6,13 @@ from PIL import Image, ImageChops
 from src.shared.image_ops import ImageValidationError
 
 
-def trim_image(image_path: Path, margin: int, replace: bool = False) -> Path:
+def trim_image(image_path: Path, margin: int, replace: bool = False) -> tuple[Path, bool]:
     """
     Trims the image by removing the border of the background color.
     The background color is determined by checking all 4 corners;
     at least 3 must match to proceed.
     Adds a specified margin around the cropped content.
-    Returns the path to the saved image.
+    Returns (path_to_saved_image, was_modified).
     """
     with Image.open(image_path) as img:
         # Process in RGBA to handle transparency correctly if present,
@@ -60,16 +60,19 @@ def trim_image(image_path: Path, margin: int, replace: bool = False) -> Path:
         if not bbox:
             # Image is entirely the background color (or empty)
             # Just return original
-            return image_path
+            return image_path, False
 
         # Expand bbox with margin
         left, upper, right, lower = bbox
-        width, height = img.size
 
         left = max(0, left - margin)
         upper = max(0, upper - margin)
         right = min(width, right + margin)
         lower = min(height, lower + margin)
+
+        # Check if the new dimensions are actually different
+        if (left, upper, right, lower) == (0, 0, width, height):
+            return image_path, False
 
         # Crop the ORIGINAL image (img)
         cropped = img.crop((left, upper, right, lower))
@@ -82,4 +85,4 @@ def trim_image(image_path: Path, margin: int, replace: bool = False) -> Path:
 
         cropped.save(target_path)
 
-    return target_path
+    return target_path, True
