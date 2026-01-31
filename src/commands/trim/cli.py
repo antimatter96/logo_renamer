@@ -59,30 +59,42 @@ def trim(
         console.print(f"[bold blue]Trimming {len(files_to_process)} image(s)...[/ ]")
 
     # 2. Process Files
-    success_count = 0
+    trimmed_count = 0
+    no_change_count = 0
+    skipped_count = 0
+
     for file_path in files_to_process:
         try:
-            if _process_single_file(file_path, margin, replace):
-                success_count += 1
+            status = _process_single_file(file_path, margin, replace)
+            if status == "trimmed":
+                trimmed_count += 1
+            elif status == "no_change":
+                no_change_count += 1
+            else:
+                skipped_count += 1
         except Exception as e:
             console.print(f"[bold red]Error processing {file_path.name}:[/ ] {e}")
+            skipped_count += 1
 
     console.print(
-        f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files. {success_count} trimmed successfully."
+        f"\n[bold green]Completed:[/ ] Processed {len(files_to_process)} files.\n"
+        f"- Trimmed: {trimmed_count}\n"
+        f"- No Change: {no_change_count}\n"
+        f"- Skipped: {skipped_count}"
     )
 
 
-def _process_single_file(image_path: Path, margin: int, replace: bool) -> bool:
+def _process_single_file(image_path: Path, margin: int, replace: bool) -> str:
     """
     Processes a single image file: validation and trimming.
-    Returns True if successful, False otherwise.
+    Returns status: 'trimmed', 'no_change', or 'skipped'.
     """
     try:
         # 1. Validate image
         load_and_validate_image(image_path)
     except ImageValidationError as e:
         console.print(f"[bold red]Skip {image_path.name}:[/ ] {e}")
-        return False
+        return "skipped"
 
     # 2. Trim image
     try:
@@ -91,12 +103,12 @@ def _process_single_file(image_path: Path, margin: int, replace: bool) -> bool:
             console.print(
                 f"[bold yellow]Warning:[/ ] No changes for {image_path.name} (already optimal size)"
             )
-            return True  # Consider it successful even if no trim was needed
+            return "no_change"
         console.print(f"[bold green]Trimmed:[/ ] {image_path.name} -> {output_path.name}")
-        return True
+        return "trimmed"
     except ImageValidationError as e:
         console.print(f"[bold red]Skip {image_path.name}:[/ ] {e}")
-        return False
+        return "skipped"
     except Exception as e:
         console.print(f"[bold red]Error trimming {image_path.name}:[/ ] {e}")
-        return False
+        return "skipped"
