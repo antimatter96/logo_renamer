@@ -14,7 +14,7 @@ def trim(
     image_paths: list[Path] = typer.Argument(
         ..., help="Path to the image file(s) or directories."
     ),
-    margin: int = typer.Option(20, help="Margin in pixels to leave around the content."),
+    margin: int = typer.Option(48, help="Margin in pixels to leave around the content."),
     replace: bool = typer.Option(
         False,
         "--replace",
