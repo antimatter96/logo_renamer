@@ -38,9 +38,13 @@ def test_extend_logic():
                     if result.getpixel((0, 0)) == (255, 255, 255):
                         print("[PASS] Case 1: RGB image extended and centered correctly.")
                     else:
-                        print(f"[FAIL] Case 1: Edge color is {result.getpixel((0, 0))}, expected white.")
+                        print(
+                            f"[FAIL] Case 1: Edge color is {result.getpixel((0, 0))}, expected white."
+                        )
                 else:
-                    print(f"[FAIL] Case 1: Center pixel color is {result.getpixel((15, 15))}, expected blue.")
+                    print(
+                        f"[FAIL] Case 1: Center pixel color is {result.getpixel((15, 15))}, expected blue."
+                    )
             else:
                 print(f"[FAIL] Case 1: Unexpected size {result.size}, expected (30, 30).")
     except Exception as e:
@@ -64,9 +68,13 @@ def test_extend_logic():
                     if result.getpixel((0, 0)) == (0, 0, 0, 0):
                         print("[PASS] Case 2: RGBA image extended and centered correctly.")
                     else:
-                        print(f"[FAIL] Case 2: Edge color is {result.getpixel((0, 0))}, expected transparent.")
+                        print(
+                            f"[FAIL] Case 2: Edge color is {result.getpixel((0, 0))}, expected transparent."
+                        )
                 else:
-                    print(f"[FAIL] Case 2: Center pixel color is {result.getpixel((15, 15))}, expected red.")
+                    print(
+                        f"[FAIL] Case 2: Center pixel color is {result.getpixel((15, 15))}, expected red."
+                    )
             else:
                 print(f"[FAIL] Case 2: Unexpected size {result.size}.")
     except Exception as e:
