@@ -1,8 +1,11 @@
 from pathlib import Path
+
 from PIL import Image
+
 
 class ImageValidationError(Exception):
     pass
+
 
 def load_and_validate_image(image_path: Path) -> bytes:
     """

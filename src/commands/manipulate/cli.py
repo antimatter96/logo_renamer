@@ -1,36 +1,40 @@
 from pathlib import Path
+
 import typer
-from rich.console import Console
 from PIL import Image
+from rich.console import Console
 
 from src.shared.image_ops import (
-    ImageValidationError, 
+    ImageValidationError,
     load_and_validate_image,
 )
-from .image_ops import trim_image_obj, extend_image_obj
+
+from .image_ops import extend_image_obj, trim_image_obj
 
 console = Console()
+
 
 def parse_operations(ops_str: str) -> list[tuple]:
     """
     Parses 'e,t48' into [('e', None), ('t', 48)]
     """
     ops = []
-    for part in ops_str.split(','):
+    for part in ops_str.split(","):
         part = part.strip().lower()
         if not part:
             continue
-        if part == 'e':
-            ops.append(('e', None))
-        elif part.startswith('t'):
+        if part == "e":
+            ops.append(("e", None))
+        elif part.startswith("t"):
             try:
                 margin = int(part[1:]) if len(part) > 1 else 20
-                ops.append(('t', margin))
+                ops.append(("t", margin))
             except ValueError:
                 raise ValueError(f"Invalid trim margin: {part[1:]}")
         else:
             raise ValueError(f"Unknown operation: {part}")
     return ops
+
 
 def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> str:
     """
@@ -49,10 +53,10 @@ def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> s
             modified = False
 
             for op_type, param in ops:
-                if op_type == 'e':
+                if op_type == "e":
                     current_img = extend_image_obj(current_img)
                     modified = True
-                elif op_type == 't':
+                elif op_type == "t":
                     current_img, was_trimmed = trim_image_obj(current_img, param)
                     if was_trimmed:
                         modified = True
@@ -75,20 +79,24 @@ def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> s
         console.print(f"[bold red]Error processing {image_path.name}:[/ ] {e}")
         return "skipped"
 
+
 def manipulate(
-    ops_str: str = typer.Argument(..., help="Comma-separated operations: 'e' (extend), 't<margin>' (trim). Examples: 'e', 't20', 'e,t48'"),
+    ops_str: str = typer.Argument(
+        ...,
+        help="Comma-separated operations: 'e' (extend), 't<margin>' (trim). Examples: 'e', 't20', 'e,t48'",
+    ),
     image_paths: list[Path] = typer.Argument(..., help="Path to image file(s) or directories."),
-    replace: bool = typer.Option(False, "--replace", "-r", help="Replace the original file(s)."),
+    replace: bool = typer.Option(
+        False, "--replace", "-r", help="Replace the original file(s)."
+    ),
 ):
     """
     Manipulate images with a sequence of operations.
-    
+
     Examples:
-    
+
     - Trim with 20px margin: 't20'
-    
     - Extend background then trim with 48px margin: 'e,t48'
-    
     - Just extend: 'e'
     """
     try:
@@ -102,7 +110,11 @@ def manipulate(
 
     for path in image_paths:
         if path.is_dir():
-            dir_files = [p for p in path.iterdir() if p.is_file() and p.suffix.lower() in valid_extensions]
+            dir_files = [
+                p
+                for p in path.iterdir()
+                if p.is_file() and p.suffix.lower() in valid_extensions
+            ]
             files_to_process.extend(dir_files)
         elif path.exists():
             files_to_process.append(path)

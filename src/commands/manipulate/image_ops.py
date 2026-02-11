@@ -1,6 +1,9 @@
 from collections import Counter
+
 from PIL import Image, ImageChops
+
 from src.shared.image_ops import ImageValidationError
+
 
 def get_edge_background_color(img: Image.Image) -> tuple:
     """
@@ -24,7 +27,7 @@ def get_edge_background_color(img: Image.Image) -> tuple:
 
 def get_corner_background_color(img: Image.Image) -> tuple:
     """
-    Determines background color from 4 corners. 
+    Determines background color from 4 corners.
     Returns the color if at least 3 match, else raises ImageValidationError.
     """
     width, height = img.size
