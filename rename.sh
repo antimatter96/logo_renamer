@@ -1,4 +1,4 @@
-rename 's/_(result|trimmed|extended|part_)//ig' -- *
+rename 's/_(result|trimmed|extended|processed|part_)//ig' -- *
 rename 's/_\././ig' -- *
 rename 's/^Screenshot_//ig' -- *
 rename 's/^SCR-//ig' -- *
