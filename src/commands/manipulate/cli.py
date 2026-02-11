@@ -6,9 +6,8 @@ from PIL import Image
 from src.shared.image_ops import (
     ImageValidationError, 
     load_and_validate_image,
-    trim_image_obj,
-    extend_image_obj
 )
+from .image_ops import trim_image_obj, extend_image_obj
 
 console = Console()
 
