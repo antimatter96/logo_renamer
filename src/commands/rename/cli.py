@@ -25,6 +25,9 @@ def rename(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would happen without renaming."
     ),
+    max_images: int = typer.Option(
+        None, "--max-images", "-n", help="Maximum number of images to process."
+    ),
 ):
     """
     Identifies a company from its logo and renames the file to the company name.
@@ -87,7 +90,13 @@ def rename(
         console.print("[bold yellow]Warning:[/ ] No image files found to process.")
         return
 
-    if len(image_paths) == 1 and image_paths[0].is_dir():
+    total_found = len(files_to_process)
+    if max_images is not None and max_images > 0 and max_images < total_found:
+        files_to_process = files_to_process[:max_images]
+        console.print(
+            f"[bold blue]Bulk Processing:[/ ] Found {total_found} images, but renaming only {len(files_to_process)}"
+        )
+    elif len(image_paths) == 1 and image_paths[0].is_dir():
         console.print(
             f"[bold blue]Bulk Processing:[/ ] Found {len(files_to_process)} images in {image_paths[0]}"
         )
