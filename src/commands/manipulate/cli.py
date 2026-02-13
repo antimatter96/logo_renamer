@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import typer
-from PIL import Image
+from PIL import Image, ImageChops
 from rich.console import Console
 
 from src.shared.image_ops import (
@@ -36,7 +36,20 @@ def parse_operations(ops_str: str) -> list[tuple]:
     return ops
 
 
-def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> str:
+def _images_are_identical(img1: Image.Image, img2: Image.Image) -> bool:
+    """
+    Performs a pixel-perfect comparison between two images.
+    """
+    if img1.size != img2.size or img1.mode != img2.mode:
+        return False
+
+    diff = ImageChops.difference(img1, img2)
+    return not diff.getbbox()
+
+
+def _process_single_file(
+    image_path: Path, ops: list[tuple], replace: bool, skip_same: bool
+) -> str:
     """
     Applies a sequence of operations to an image.
     Returns status: 'processed', 'no_change', or 'skipped'.
@@ -49,7 +62,8 @@ def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> s
 
     try:
         with Image.open(image_path) as img:
-            current_img = img.copy()
+            original_img = img.copy()
+            current_img = original_img.copy()
             modified = False
 
             for op_type, param in ops:
@@ -60,6 +74,11 @@ def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> s
                     current_img, was_trimmed = trim_image_obj(current_img, param)
                     if was_trimmed:
                         modified = True
+
+            # Check if final image is same as source if requested
+            if modified and skip_same:
+                if _images_are_identical(original_img, current_img):
+                    modified = False
 
             if not modified:
                 console.print(f"[bold yellow]Warning:[/ ] No changes for {image_path.name}")
@@ -72,7 +91,9 @@ def _process_single_file(image_path: Path, ops: list[tuple], replace: bool) -> s
                 target_path = image_path.parent / f"{image_path.stem}{suffix}"
 
             current_img.save(target_path)
-            console.print(f"[bold green]Processed:[/ ] {image_path.name} -> {target_path.name}")
+            console.print(
+                f"[bold green]Processed:[/ ] {image_path.name} -> {target_path.name}"
+            )
             return "processed"
 
     except Exception as e:
@@ -85,9 +106,16 @@ def manipulate(
         ...,
         help="Comma-separated operations: 'e' (extend), 't<margin>' (trim). Examples: 'e', 't20', 'e,t48'",
     ),
-    image_paths: list[Path] = typer.Argument(..., help="Path to image file(s) or directories."),
+    image_paths: list[Path] = typer.Argument(
+        ..., help="Path to image file(s) or directories."
+    ),
     replace: bool = typer.Option(
         False, "--replace", "-r", help="Replace the original file(s)."
+    ),
+    skip_same: bool = typer.Option(
+        True,
+        "--skip-same/--no-skip-same",
+        help="Skip saving if the final image is identical to the source.",
     ),
 ):
     """
@@ -130,7 +158,7 @@ def manipulate(
     skipped_count = 0
 
     for file_path in files_to_process:
-        status = _process_single_file(file_path, ops, replace)
+        status = _process_single_file(file_path, ops, replace, skip_same)
         if status == "processed":
             processed_count += 1
         elif status == "no_change":
