@@ -91,9 +91,7 @@ def _process_single_file(
                 target_path = image_path.parent / f"{image_path.stem}{suffix}"
 
             current_img.save(target_path)
-            console.print(
-                f"[bold green]Processed:[/ ] {image_path.name} -> {target_path.name}"
-            )
+            console.print(f"[bold green]Processed:[/ ] {image_path.name} -> {target_path.name}")
             return "processed"
 
     except Exception as e:
@@ -106,9 +104,7 @@ def manipulate(
         ...,
         help="Comma-separated operations: 'e' (extend), 't<margin>' (trim). Examples: 'e', 't20', 'e,t48'",
     ),
-    image_paths: list[Path] = typer.Argument(
-        ..., help="Path to image file(s) or directories."
-    ),
+    image_paths: list[Path] = typer.Argument(..., help="Path to image file(s) or directories."),
     replace: bool = typer.Option(
         False, "--replace", "-r", help="Replace the original file(s)."
     ),
